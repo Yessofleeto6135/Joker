@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Joker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-wrap">
+          <div class="brand-icon">J</div>
+          <div>
+            <p class="eyebrow">AI Comic Assistant</p>
+            <h1>Joker</h1>
+          </div>
+        </div>
+        <button id="askButton" class="primary-button">Ask from Joker</button>
+      </header>
+
+      <main class="content">
+        <section class="home-panel card">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Choose the vibe</p>
+              <h2>Pick a category</h2>
+            </div>
+            <span id="statusBadge" class="status-pill">Ready</span>
+          </div>
+
+          <div id="categoryContainer" class="category-grid"></div>
+
+          <div class="quick-actions">
+            <button id="createJokeButton" class="action-button action-primary">Create Joke</button>
+            <button id="createNewButton" class="action-button action-secondary">Create New</button>
+          </div>
+        </section>
+
+        <section class="prompt-panel card hidden" id="promptPanel">
+          <div class="section-header compact">
+            <div>
+              <p class="eyebrow">Custom request</p>
+              <h3>Ask Joker anything</h3>
+            </div>
+            <button id="closePromptButton" class="icon-button" aria-label="Close prompt">×</button>
+          </div>
+
+          <label class="field-label" for="promptInput">What kind of joke do you want?</label>
+          <textarea id="promptInput" rows="4" placeholder="Example: Make a joke about my dog and my boss..."></textarea>
+
+          <div class="prompt-actions">
+            <button id="generateCustomButton" class="primary-button">Generate</button>
+          </div>
+        </section>
+
+        <section class="result-panel card">
+          <div class="section-header compact">
+            <div>
+              <p class="eyebrow">Joke result</p>
+              <h3>Your laugh</h3>
+            </div>
+          </div>
+
+          <div id="resultBox" class="result-box">
+            Select a category or ask Joker to create something fun.
+          </div>
+
+          <div class="result-actions">
+            <button id="speakButton" class="speaker-button" type="button">🔊 Speak joke</button>
+          </div>
+        </section>
+
+        <section class="memory-panel card">
+          <div class="section-header compact">
+            <div>
+              <p class="eyebrow">Memory</p>
+              <h3>Your humor profile</h3>
+            </div>
+          </div>
+
+          <ul id="memoryList" class="memory-list">
+            <li>No jokes yet — your style will appear here.</li>
+          </ul>
+        </section>
+      </main>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
