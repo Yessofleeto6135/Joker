@@ -14,6 +14,9 @@ const promptPanel = document.getElementById('promptPanel');
 const promptInput = document.getElementById('promptInput');
 const speakButton = document.getElementById('speakButton');
 
+let llmEngine = null;
+let llmInitializing = false;
+
 function loadMemory() {
   try {
     const raw = localStorage.getItem('joker-memory');
@@ -66,6 +69,18 @@ function renderMemory(memory) {
 
 function cleanPrompt(prompt) {
   return typeof prompt === 'string' ? prompt.trim() : '';
+}
+
+function cleanAIOutput(text) {
+  if (!text) return '';
+  const cleaned = text
+    .replace(/\*\*|__|```/g, '')
+    .replace(/\n+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const firstSentence = cleaned.split(/(?<=[.!?])\s+/)[0];
+  return firstSentence || cleaned;
 }
 
 function buildOfflineJoke({ category, prompt, memory }) {
@@ -128,24 +143,63 @@ function buildOfflineJoke({ category, prompt, memory }) {
   return list[index];
 }
 
-function generateJoke({ category, prompt, mode, memory }) {
-  const safePrompt = cleanPrompt(prompt) || 'make me laugh';
-  const userWords = safePrompt
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '')
-    .split(/\s+/)
-    .filter((word) => word.length > 4 && !['make', 'joke', 'about', 'from', 'with', 'that', 'this'].includes(word));
+async function ensureAI() {
+  if (llmEngine) return llmEngine;
+  if (llmInitializing) return null;
 
-  const favorites = Array.isArray(memory.profile?.favorites) ? memory.profile.favorites : [];
-  const merged = [...favorites, ...userWords].slice(0, 8);
+  llmInitializing = true;
+  setStatus('Loading AI...');
 
-  if (!memory.profile) memory.profile = { favorites: [] };
-  memory.profile.favorites = [...new Set(merged)];
-
-  return buildOfflineJoke({ category, prompt: safePrompt, memory });
+  try {
+    const { CreateMLCEngine } = await import('https://esm.sh/@mlc-ai/web-llm');
+    llmEngine = await CreateMLCEngine('Llama-3.2-1B-Instruct-q4f32_1-MLC', {
+      initProgressCallback: (report) => {
+        if (report && report.text) {
+          setStatus(report.text.includes('Loading') ? report.text : 'Loading AI...');
+        }
+      }
+    });
+    return llmEngine;
+  } catch (error) {
+    console.warn('WebLLM failed to load:', error);
+    return null;
+  } finally {
+    llmInitializing = false;
+    if (llmEngine) {
+      setStatus('Ready');
+    }
+  }
 }
 
-function requestJoke(payload) {
+async function generateWithAI({ category, prompt, mode, memory }) {
+  const engine = await ensureAI();
+  if (!engine) return null;
+
+  const history = Array.isArray(memory.history) ? memory.history.slice(0, 3) : [];
+  const historyText = history.length ? history.map((item) => `${item.category}: ${item.joke}`).join(' | ') : 'No previous jokes yet.';
+  const favorites = Array.isArray(memory.profile?.favorites) ? memory.profile.favorites : [];
+  const favoriteText = favorites.length ? favorites.join(', ') : 'general comedy';
+
+  const input = `You are Joker, a funny comedian. Create one original and playful joke in the category: ${category}. The user asks: ${prompt}. The current mode is: ${mode}. Use the user humor history: ${historyText}. Favorite humor topics: ${favoriteText}. Give only one joke, no explanation, no markdown, no numbering, no quotes, 1 short paragraph.`;
+
+  try {
+    const response = await engine.chat.completions.create({
+      messages: [{ role: 'user', content: input }],
+      temperature: 0.9,
+      max_tokens: 180
+    });
+
+    const text = response?.choices?.[0]?.message?.content || '';
+    const cleaned = cleanAIOutput(text);
+    if (cleaned.length > 10) return cleaned;
+  } catch (error) {
+    console.warn('AI generation failed:', error);
+  }
+
+  return null;
+}
+
+async function requestJoke(payload) {
   const memory = loadMemory();
   const category = payload.category || state.selectedCategory;
   const prompt = payload.prompt || `Make a ${category.toLowerCase()} joke for me.`;
@@ -153,7 +207,8 @@ function requestJoke(payload) {
 
   setStatus('Thinking...');
 
-  const joke = generateJoke({ category, prompt, mode, memory });
+  const aiJoke = await generateWithAI({ category, prompt, mode, memory });
+  const joke = aiJoke || buildOfflineJoke({ category, prompt, memory });
   state.currentJoke = joke;
   resultBox.textContent = joke;
 
@@ -164,6 +219,18 @@ function requestJoke(payload) {
     ].slice(0, 12),
     profile: memory.profile || { favorites: [] }
   };
+
+  if (!nextMemory.profile.favorites) nextMemory.profile.favorites = [];
+
+  const words = prompt
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .split(/\s+/)
+    .filter((word) => word.length > 4 && !['make', 'joke', 'about', 'from', 'with', 'that', 'this'].includes(word));
+
+  if (words.length) {
+    nextMemory.profile.favorites = [...new Set([...nextMemory.profile.favorites, ...words])].slice(0, 8);
+  }
 
   saveMemory(nextMemory);
   renderMemory(nextMemory);
