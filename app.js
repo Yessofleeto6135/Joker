@@ -1,9 +1,40 @@
 const defaultCategories = ['Pun', 'Dad Joke', 'Dark', 'One-Liner', 'Office', 'Animal', 'Travel', 'Roast'];
+const languages = {
+  English: {
+    askLabel: 'Ask from Joker',
+    customPrompt: 'What kind of joke do you want?',
+    generate: 'Generate',
+    ready: 'Ready',
+    thinking: 'Thinking...'
+  },
+  Spanish: {
+    askLabel: 'Pregunta a Joker',
+    customPrompt: '¿Qué tipo de chiste quieres?',
+    generate: 'Generar',
+    ready: 'Listo',
+    thinking: 'Pensando...'
+  },
+  French: {
+    askLabel: 'Demander à Joker',
+    customPrompt: 'Quel type de blague veux-tu ?',
+    generate: 'Générer',
+    ready: 'Prêt',
+    thinking: 'Réflexion...'
+  },
+  Arabic: {
+    askLabel: 'اسأل جوكر',
+    customPrompt: 'ما نوع النكتة التي تريدها؟',
+    generate: 'إنشاء',
+    ready: 'مستعد',
+    thinking: 'يُفكر...'
+  }
+};
 
 const state = {
   categories: defaultCategories,
   selectedCategory: 'Pun',
-  currentJoke: ''
+  currentJoke: '',
+  language: 'English'
 };
 
 const categoryContainer = document.getElementById('categoryContainer');
@@ -13,9 +44,200 @@ const memoryList = document.getElementById('memoryList');
 const promptPanel = document.getElementById('promptPanel');
 const promptInput = document.getElementById('promptInput');
 const speakButton = document.getElementById('speakButton');
+const askButton = document.getElementById('askButton');
+const languageSelect = document.getElementById('languageSelect');
 
-let llmEngine = null;
-let llmInitializing = false;
+const builtInAI = {
+  // Built-in joke engine embedded directly in the application code.
+  // This model is intentionally safe, clean, and always returns a joke.
+  generate({ prompt, category, memory, language }) {
+    const text = (prompt || '').trim() || 'funny life';
+    const words = text
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .split(/\s+/)
+      .filter((word) => word.length > 3 && !['make', 'joke', 'about', 'this', 'that', 'with', 'from', 'for', 'the', 'and'].includes(word));
+
+    const favoriteTopics = Array.isArray(memory?.profile?.favorites) ? memory.profile.favorites : [];
+    const topic = words[0] || favoriteTopics[0] || 'coffee';
+    const safeCategory = defaultCategories.includes(category) ? category : 'Pun';
+
+    const jokes = {
+      English: {
+        Pun: [
+          `I tried to open a ${topic} bakery, but it was a crumby idea and still somehow a little flaky.`,
+          `My ${topic} plan was so good that even my calendar wanted a date with it.`,
+          `I bought a ${topic} lamp because I wanted brighter ideas, but it only lit up my excuses.`
+        ],
+        'Dad Joke': [
+          `I told my friend I was starting a ${topic} business, and he said, “That sounds like a pun-derful plan.”`,
+          `The ${topic} expert told me to relax, so I sat down and let my stress do a little decompressing.`,
+          `I asked the ${topic} coach for advice and it said, “Just keep your balance and don’t let life get too dramatic.”`
+        ],
+        Dark: [
+          `I tried telling a dark joke about ${topic}, but even my shadow said, “That was a little too much.”`,
+          `My ${topic} story had a dramatic ending, which is honestly pretty on-brand for me.`,
+          `I made a dark joke about ${topic}, and the room got quiet because even the silence wanted to stay polite.`
+        ],
+        'One-Liner': [
+          `My ${topic} idea is so sharp it could cut through a Monday morning.`,
+          `I started a ${topic} routine and now my schedule is dramatically more emotional.`,
+          `I wanted to be funny about ${topic}, but then I realized I already was.`
+        ],
+        Office: [
+          `At work, my ${topic} idea got approved instantly because my boss needed a distraction.`,
+          `I told a ${topic} joke in the office and suddenly everyone called it “creative energy.”`,
+          `The team meeting about ${topic} was so boring that even the coffee looked for a new job.`
+        ],
+        Animal: [
+          `My dog tried to tell a ${topic} joke, but it was too doggone dramatic.`,
+          `The cat judged my ${topic} joke like it was a courtroom scene.`,
+          `I asked my dog for a ${topic} punchline and it just wagged like it had it ready.`
+        ],
+        Travel: [
+          `My ${topic} trip was so chaotic it felt like a passport to confusion.`,
+          `I booked a ${topic} vacation and forgot the map, so now I’m just exploring my own mistakes.`,
+          `The only thing more dramatic than my ${topic} trip was my suitcase acting like it had a personality.`
+        ],
+        Roast: [
+          `Your ${topic} energy is so strong it deserves its own applause.`,
+          `I tried to roast ${topic}, but it was too easy and too accurate.`,
+          `The ${topic} idea was so bold it should have gotten its own standing ovation.`
+        ]
+      },
+      Spanish: {
+        Pun: [
+          `Intenté abrir una panadería de ${topic}, pero fue una idea un poco demasiado crujiente.`,
+          `Mi idea sobre ${topic} fue tan buena que hasta el calendario quiso salir conmigo.`,
+          `Compré una lámpara de ${topic} para iluminar mis ideas, pero solo encendió mis excusas.`
+        ],
+        'Dad Joke': [
+          `Le dije a mi amigo que iba a abrir un negocio de ${topic} y me dijo: “Eso suena muy divertido.”`,
+          `El experto en ${topic} me dijo que me relajara, así que me senté y dejé que mi estrés tomara un descanso.`,
+          `Le pedí consejo al coach de ${topic} y me dijo: “Solo mantén el equilibrio y no dejes que la vida sea tan dramática.”`
+        ],
+        Dark: [
+          `Intenté contar un chiste oscuro sobre ${topic}, pero incluso mi sombra dijo que fue demasiado.`,
+          `Mi historia sobre ${topic} tuvo un final dramático, que en verdad es muy de mi estilo.`,
+          `Hice un chiste oscuro sobre ${topic} y la sala se quedó en silencio porque incluso el silencio quería ser educado.`
+        ],
+        'One-Liner': [
+          `Mi idea de ${topic} es tan aguda que podría cortar un lunes por la mitad.`,
+          `Empecé una rutina de ${topic} y ahora mi horario tiene más drama que una serie.`,
+          `Quería hacer humor sobre ${topic}, pero entonces me di cuenta de que ya lo estaba haciendo.`
+        ],
+        Office: [
+          `En la oficina, mi idea de ${topic} fue aprobada de inmediato porque mi jefe necesitaba una distracción.`,
+          `Dije un chiste de ${topic} en la oficina y de repente todo el mundo lo llamó “energía creativa”.`,
+          `La reunión del equipo sobre ${topic} fue tan aburrida que hasta el café buscó otro trabajo.`
+        ],
+        Animal: [
+          `Mi perro intentó contar un chiste de ${topic}, pero fue demasiado dramático.`,
+          `El gato juzgó mi chiste de ${topic} como si fuera una escena judicial.`,
+          `Le pedí a mi perro un remate sobre ${topic} y solo movió la cola como si ya lo tuviera listo.`
+        ],
+        Travel: [
+          `Mi viaje de ${topic} fue tan caótico que parecía un pasaporte a la confusión.`,
+          `Reservé unas vacaciones de ${topic} y olvidé el mapa, así que ahora estoy explorando mis propios errores.`,
+          `Lo único más dramático que mi viaje de ${topic} fue mi maleta actuando como si tuviera personalidad.`
+        ],
+        Roast: [
+          `Tu energía de ${topic} es tan fuerte que merece su propio aplauso.`,
+          `Intenté hacer una broma sobre ${topic}, pero fue demasiado fácil y demasiado precisa.`,
+          `La idea de ${topic} fue tan audaz que merecía una ovación de pie.`
+        ]
+      },
+      French: {
+        Pun: [
+          `J’ai essayé d’ouvrir une boulangerie de ${topic}, mais c’était une idée un peu trop croustillante.`,
+          `Mon idée sur ${topic} était si bonne que même le calendrier voulait sortir avec elle.`,
+          `J’ai acheté une lampe de ${topic} pour éclairer mes idées, mais elle n’a fait qu’allumer mes excuses.`
+        ],
+        'Dad Joke': [
+          `J’ai dit à mon ami que je créais une entreprise de ${topic}, et il a répondu: « Ça sonne comme un plan parfaitement drôle. »`,
+          `Le coach de ${topic} m’a dit de me détendre, donc je me suis assis et j’ai laissé mon stress faire une petite pause.`,
+          `J’ai demandé conseil au coach de ${topic} et il m’a dit: « Garde l’équilibre et laisse la vie être moins dramatique. »`
+        ],
+        Dark: [
+          `J’ai voulu faire une blague sombre sur ${topic}, mais même mon ombre a dit: « C’était un peu trop. »`,
+          `Mon histoire sur ${topic} a eu une fin dramatique, ce qui est très dans mon style.`,
+          `J’ai fait une blague sombre sur ${topic}, et la pièce est devenue silencieuse parce que même le silence voulait être poli.`
+        ],
+        'One-Liner': [
+          `Mon idée sur ${topic} est si tranchante qu’elle pourrait couper un lundi en deux.`,
+          `J’ai commencé une routine de ${topic} et maintenant mon emploi du temps a plus de drame qu’une série.`,
+          `Je voulais être drôle sur ${topic}, puis j’ai réalisé que je l’étais déjà.`
+        ],
+        Office: [
+          `Au bureau, mon idée de ${topic} a été approuvée tout de suite parce que mon patron avait besoin d’une distraction.`,
+          `J’ai dit une blague sur ${topic} au bureau, et soudain tout le monde a appelé ça « énergie créative ».`,
+          `La réunion d’équipe sur ${topic} était si ennuyeuse que même le café cherchait un autre travail.`
+        ],
+        Animal: [
+          `Mon chien a essayé de faire une blague sur ${topic}, mais c’était trop dramatique.`,
+          `Le chat a jugé ma blague sur ${topic} comme une scène judiciaire.`,
+          `J’ai demandé à mon chien un punchline sur ${topic} et il a juste remué la queue comme s’il l’avait déjà prête.`
+        ],
+        Travel: [
+          `Mon voyage de ${topic} était si chaotique qu’il ressemblait à un passeport vers la confusion.`,
+          `J’ai réservé des vacances sur ${topic} et j’ai oublié la carte, donc maintenant je parcours mes propres erreurs.`,
+          `La seule chose plus dramatique que mon voyage de ${topic} était ma valise qui se comportait comme une personne.`
+        ],
+        Roast: [
+          `Ton énergie sur ${topic} est si forte qu’elle mérite sa propre ovation.`,
+          `J’ai essayé de faire une blague sur ${topic}, mais c’était trop facile et trop juste.`,
+          `L’idée de ${topic} était tellement audacieuse qu’elle méritait une standing ovation.`
+        ]
+      },
+      Arabic: {
+        Pun: [
+          `حاولت فتح مخبزًا لـ ${topic}، لكنه كان فكرة مترهلة جدًا ومقرفة نوعًا ما.`,
+          `كانت فكرة ${topic} جيدة جدًا لدرجة أن حتى التقويم أراد الخروج معها.`,
+          `اشتريت مصباحًا لـ ${topic} لأضيء أفكاري، لكنه أضاء فقط أعذاري.`
+        ],
+        'Dad Joke': [
+          `قلت لصديقي أنني سأفتح متجرًا لـ ${topic} وقال: «يبدو هذا مخططًا مضحكًا جدًا».`,
+          `قال خبير ${topic} إنني بحاجة للهدوء، فجلست وتركـت التوتر يذهب في استراحة قصيرة.`,
+          `سألت مدرب ${topic} عن النصيحة، فقال: «حافظ على التوازن ولا تدع الحياة تكون درامية جدًا».`
+        ],
+        Dark: [
+          `حاولت أن أقول نكتة مظلمة عن ${topic}، لكن حتى ظلي قال: «هذا كان كثيرًا بعض الشيء».`,
+          `قصة ${topic} كانت لها نهاية درامية، وهذا مناسب جدًا لشخصيتي.`,
+          `قلت نكتة مظلمة عن ${topic} فصمتت الغرفة لأن حتى الصمت أراد أن يكون مهذبًا.`
+        ],
+        'One-Liner': [
+          `فكرة ${topic} حادة جدًا لدرجة أنها قد تقطع صباح الاثنين في نصفين.`,
+          `بدأت Routine لـ ${topic} والآن جدول أعمالي أكثر دراما من المسلسل.`,
+          `كنت أريد أن أكون مضحكًا حول ${topic}، ثم أدركت أنني كنت أضحك فعلاً.`
+        ],
+        Office: [
+          `في المكتب، تمت الموافقة على فكرة ${topic} فورًا لأن المدير كان يحتاج إلى تشتيت.`,
+          `قلت نكتة عن ${topic} في المكتب، وفجأة كل أحد دعاها «طاقة إبداعية».`,
+          `اجتماع الفريق حول ${topic} كان مملًا جدًا لدرجة أن حتى القهوة بحثت عن وظيفة جديدة.`
+        ],
+        Animal: [
+          `حاول كلبـي أن يقول نكتة عن ${topic}، لكنها كانت درامية جدًا.`,
+          `القط حكم على نكتتي عن ${topic} كما لو أنها مشهد قضيائي.`,
+          `سألت كلبي عن قافية ${topic} فقط هز ذيله وكأنه يعرفها.`
+        ],
+        Travel: [
+          `رحلة ${topic} كانت فوضوية جدًا لدرجة أنها شعرت كأنها جواز سفر نحو الارتباك.`,
+          `حجزت إجازة ${topic} ونسيت الخريطة، لذلك الآن أنا أستكشف أخطائي بنفسي.`,
+          `الشيء الوحيد الأكثر دراما من رحلتي في ${topic} هو حقيبتي التي تتصرف كأنها شخص.`
+        ],
+        Roast: [
+          `طاقة ${topic} قوية جدًا لدرجة أنها تستحق تصفيقًا منفصلًا.`,
+          `حاولت أن أستهزئ بـ ${topic}، لكنه كان سهلًا جدًا ومباشرًا جدًا.`,
+          `فكرة ${topic} كانت جريئة جدًا لدرجة أنها تستحق تصفيق وقوف.`
+        ]
+      }
+    };
+
+    const collection = jokes[language]?.[safeCategory] || jokes.English[safeCategory];
+    const index = (text.length + safeCategory.length + topic.length + (memory?.history?.length || 0)) % collection.length;
+    return collection[index];
+  }
+};
 
 function loadMemory() {
   try {
@@ -67,148 +289,36 @@ function renderMemory(memory) {
     .join('');
 }
 
+function setLanguage(lang) {
+  state.language = lang;
+  const languageText = languages[lang] || languages.English;
+  askButton.textContent = languageText.askLabel;
+  promptInput.placeholder = languageText.customPrompt;
+  const fieldLabel = document.querySelector('.field-label');
+  if (fieldLabel) fieldLabel.textContent = languageText.customPrompt;
+  setStatus(languageText.ready);
+  promptInput.setAttribute('aria-label', languageText.customPrompt);
+}
+
 function cleanPrompt(prompt) {
   return typeof prompt === 'string' ? prompt.trim() : '';
 }
 
-function cleanAIOutput(text) {
-  if (!text) return '';
-  const cleaned = text
-    .replace(/\*\*|__|```/g, '')
-    .replace(/\n+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  const firstSentence = cleaned.split(/(?<=[.!?])\s+/)[0];
-  return firstSentence || cleaned;
-}
-
-function buildOfflineJoke({ category, prompt, memory }) {
-  const safePrompt = cleanPrompt(prompt) || 'funny life';
-  const historyCount = Array.isArray(memory.history) ? memory.history.length : 0;
-  const words = safePrompt
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '')
-    .split(/\s+/)
-    .filter((word) => word.length > 4 && !['make', 'joke', 'about', 'this', 'that', 'with', 'from'].includes(word));
-
-  const favoriteTopics = Array.isArray(memory.profile?.favorites) ? memory.profile.favorites : [];
-  const detail = words[0] || favoriteTopics[0] || 'daily life';
-
-  const templates = {
-    Pun: [
-      `I tried to start a ${detail} business, but it was a real pun-derful disaster.`,
-      `My ${detail} idea was so good that even the calendar said it had a date.`,
-      `I started a podcast about ${detail}. Now my friends say I’m a little too niche.`
-    ],
-    'Dad Joke': [
-      `I told my ${detail} problem to a friend. He said, “Sounds like a bad punchline.”`,
-      `I tried to be serious about ${detail}, but it just kept slipping into a joke.`,
-      `My ${detail} plan was so good that even my coffee looked impressed.`
-    ],
-    Dark: [
-      `I made a dark joke about ${detail}. Even my shadow said, “That was a little much.”`,
-      `My ${detail} idea had a dramatic ending, which feels very on-brand for me.`,
-      `I told a dark joke about ${detail}. It was edgy and still somehow encouraging.`
-    ],
-    'One-Liner': [
-      `I have a ${detail} joke so sharp it could start a Monday morning fight.`,
-      `My ${detail} idea is simple: laugh now, explain later.`,
-      `I wanted to be funny about ${detail}, but I realized I was already doing it.`
-    ],
-    Office: [
-      `At work, my ${detail} idea got approved immediately because my boss needed a distraction.`,
-      `I told a ${detail} joke at the office and got called “creative.”`,
-      `The meeting about ${detail} was so boring that even the coffee looked for a new job.`
-    ],
-    Animal: [
-      `My dog tried to tell a ${detail} joke, but it was too doggone dramatic.`,
-      `The cat judged my ${detail} joke like it was a courtroom drama.`,
-      `I asked the dog for a ${detail} joke and it just wagged like it knew the punchline.`
-    ],
-    Travel: [
-      `My ${detail} trip was so chaotic it felt like a passport to confusion.`,
-      `I planned a ${detail} vacation, but the joke was on me when I forgot the map.`,
-      `The only thing more dramatic than my ${detail} trip was my luggage’s personality.`
-    ],
-    Roast: [
-      `Your ${detail} energy is so strong it deserves a standing ovation.`,
-      `I tried to roast ${detail}, but it was too easy and too accurate.`,
-      `The ${detail} idea was so bold it should have gotten its own applause.`
-    ]
-  };
-
-  const list = templates[category] || templates.Pun;
-  const index = (historyCount + safePrompt.length + detail.length) % list.length;
-  return list[index];
-}
-
-async function ensureAI() {
-  if (llmEngine) return llmEngine;
-  if (llmInitializing) return null;
-
-  llmInitializing = true;
-  setStatus('Loading AI...');
-
-  try {
-    const { CreateMLCEngine } = await import('https://esm.sh/@mlc-ai/web-llm');
-    llmEngine = await CreateMLCEngine('Llama-3.2-1B-Instruct-q4f32_1-MLC', {
-      initProgressCallback: (report) => {
-        if (report && report.text) {
-          setStatus(report.text.includes('Loading') ? report.text : 'Loading AI...');
-        }
-      }
-    });
-    return llmEngine;
-  } catch (error) {
-    console.warn('WebLLM failed to load:', error);
-    return null;
-  } finally {
-    llmInitializing = false;
-    if (llmEngine) {
-      setStatus('Ready');
-    }
-  }
-}
-
-async function generateWithAI({ category, prompt, mode, memory }) {
-  const engine = await ensureAI();
-  if (!engine) return null;
-
-  const history = Array.isArray(memory.history) ? memory.history.slice(0, 3) : [];
-  const historyText = history.length ? history.map((item) => `${item.category}: ${item.joke}`).join(' | ') : 'No previous jokes yet.';
-  const favorites = Array.isArray(memory.profile?.favorites) ? memory.profile.favorites : [];
-  const favoriteText = favorites.length ? favorites.join(', ') : 'general comedy';
-
-  const input = `You are Joker, a funny comedian. Create one original and playful joke in the category: ${category}. The user asks: ${prompt}. The current mode is: ${mode}. Use the user humor history: ${historyText}. Favorite humor topics: ${favoriteText}. Give only one joke, no explanation, no markdown, no numbering, no quotes, 1 short paragraph.`;
-
-  try {
-    const response = await engine.chat.completions.create({
-      messages: [{ role: 'user', content: input }],
-      temperature: 0.9,
-      max_tokens: 180
-    });
-
-    const text = response?.choices?.[0]?.message?.content || '';
-    const cleaned = cleanAIOutput(text);
-    if (cleaned.length > 10) return cleaned;
-  } catch (error) {
-    console.warn('AI generation failed:', error);
-  }
-
-  return null;
-}
-
-async function requestJoke(payload) {
+function requestJoke(payload) {
   const memory = loadMemory();
   const category = payload.category || state.selectedCategory;
   const prompt = payload.prompt || `Make a ${category.toLowerCase()} joke for me.`;
   const mode = payload.mode || 'category';
 
-  setStatus('Thinking...');
+  setStatus(languages[state.language]?.thinking || 'Thinking...');
 
-  const aiJoke = await generateWithAI({ category, prompt, mode, memory });
-  const joke = aiJoke || buildOfflineJoke({ category, prompt, memory });
+  const joke = builtInAI.generate({
+    prompt,
+    category,
+    memory,
+    language: state.language
+  });
+
   state.currentJoke = joke;
   resultBox.textContent = joke;
 
@@ -226,7 +336,7 @@ async function requestJoke(payload) {
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, '')
     .split(/\s+/)
-    .filter((word) => word.length > 4 && !['make', 'joke', 'about', 'from', 'with', 'that', 'this'].includes(word));
+    .filter((word) => word.length > 4 && !['make', 'joke', 'about', 'from', 'with', 'that', 'this', 'for', 'the'].includes(word));
 
   if (words.length) {
     nextMemory.profile.favorites = [...new Set([...nextMemory.profile.favorites, ...words])].slice(0, 8);
@@ -234,21 +344,37 @@ async function requestJoke(payload) {
 
   saveMemory(nextMemory);
   renderMemory(nextMemory);
-  setStatus('Ready');
+  setStatus(languages[state.language]?.ready || 'Ready');
 }
 
 function speakJoke() {
   const joke = state.currentJoke || resultBox.textContent;
   if (!joke || joke.includes('Select a category')) return;
 
-  if ('speechSynthesis' in window) {
-    const utterance = new SpeechSynthesisUtterance(joke);
-    utterance.rate = 0.95;
-    utterance.pitch = 1.1;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
+  const synth = window.speechSynthesis;
+  if (!synth) {
+    resultBox.textContent = 'Speech is not supported in this browser.';
+    return;
   }
+
+  synth.cancel();
+  const utterance = new SpeechSynthesisUtterance(joke);
+  utterance.lang = languageMap[state.language] || 'en-US';
+  utterance.rate = 0.9;
+  utterance.pitch = 1.05;
+  synth.speak(utterance);
 }
+
+const languageMap = {
+  English: 'en-US',
+  Spanish: 'es-ES',
+  French: 'fr-FR',
+  Arabic: 'ar-SA'
+};
+
+languageSelect.addEventListener('change', (event) => {
+  setLanguage(event.target.value);
+});
 
 document.getElementById('askButton').addEventListener('click', () => {
   promptPanel.classList.remove('hidden');
@@ -296,4 +422,5 @@ speakButton.addEventListener('click', speakJoke);
 
 renderCategories();
 renderMemory(loadMemory());
+setLanguage('English');
 resultBox.textContent = 'Select a category or ask Joker to create something fun.';

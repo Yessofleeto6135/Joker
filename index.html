@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Joker</title>
-    <meta name="description" content="Joker is a browser-based AI joke generator with personal memory." />
+    <meta name="description" content="Joker is a built-in joke generation app with language selection and speech." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -20,7 +20,19 @@
             <h1>Joker</h1>
           </div>
         </div>
-        <button id="askButton" class="primary-button">Ask from Joker</button>
+
+        <div class="header-controls">
+          <label class="language-picker" for="languageSelect">
+            <span>Language</span>
+            <select id="languageSelect">
+              <option value="English">English</option>
+              <option value="Spanish">Español</option>
+              <option value="French">Français</option>
+              <option value="Arabic">العربية</option>
+            </select>
+          </label>
+          <button id="askButton" class="primary-button">Ask from Joker</button>
+        </div>
       </header>
 
       <main class="content">
@@ -90,6 +102,6 @@
       </main>
     </div>
 
-    <script type="module" src="./app.js"></script>
+    <script src="./app.js"></script>
   </body>
 </html>
