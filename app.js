@@ -1,30 +1,27 @@
 const defaultCategories = ['Pun', 'Dad Joke', 'Dark', 'One-Liner', 'Office', 'Animal', 'Travel', 'Roast'];
+
 const languages = {
   English: {
     askLabel: 'Ask from Joker',
     customPrompt: 'What kind of joke do you want?',
-    generate: 'Generate',
     ready: 'Ready',
     thinking: 'Thinking...'
   },
   Spanish: {
     askLabel: 'Pregunta a Joker',
     customPrompt: '¿Qué tipo de chiste quieres?',
-    generate: 'Generar',
     ready: 'Listo',
     thinking: 'Pensando...'
   },
   French: {
     askLabel: 'Demander à Joker',
     customPrompt: 'Quel type de blague veux-tu ?',
-    generate: 'Générer',
     ready: 'Prêt',
     thinking: 'Réflexion...'
   },
   Arabic: {
     askLabel: 'اسأل جوكر',
     customPrompt: 'ما نوع النكتة التي تريدها؟',
-    generate: 'إنشاء',
     ready: 'مستعد',
     thinking: 'يُفكر...'
   }
@@ -48,8 +45,6 @@ const askButton = document.getElementById('askButton');
 const languageSelect = document.getElementById('languageSelect');
 
 const builtInAI = {
-  // Built-in joke engine embedded directly in the application code.
-  // This model is intentionally safe, clean, and always returns a joke.
   generate({ prompt, category, memory, language }) {
     const text = (prompt || '').trim() || 'funny life';
     const words = text
@@ -213,7 +208,7 @@ const builtInAI = {
         Office: [
           `في المكتب، تمت الموافقة على فكرة ${topic} فورًا لأن المدير كان يحتاج إلى تشتيت.`,
           `قلت نكتة عن ${topic} في المكتب، وفجأة كل أحد دعاها «طاقة إبداعية».`,
-          `اجتماع الفريق حول ${topic} كان مملًا جدًا لدرجة أن حتى القهوة بحثت عن وظيفة جديدة.`
+          `اجتماع الفريق حول ${topic} كان ��ملًا جدًا لدرجة أن حتى القهوة بحثت عن وظيفة جديدة.`
         ],
         Animal: [
           `حاول كلبـي أن يقول نكتة عن ${topic}، لكنها كانت درامية جدًا.`,
@@ -271,8 +266,8 @@ function renderCategories() {
 
 function setStatus(text, tone = 'success') {
   statusBadge.textContent = text;
-  statusBadge.style.color = tone === 'error' ? '#fca5a5' : '#34d399';
-  statusBadge.style.borderColor = tone === 'error' ? 'rgba(248, 113, 113, 0.32)' : 'rgba(52, 211, 153, 0.25)';
+  statusBadge.style.color = tone === 'error' ? '#fca5a5' : '#a3e635';
+  statusBadge.style.borderColor = tone === 'error' ? 'rgba(248, 113, 113, 0.32)' : 'rgba(163, 230, 53, 0.35)';
 }
 
 function renderMemory(memory) {
@@ -359,18 +354,16 @@ function speakJoke() {
 
   synth.cancel();
   const utterance = new SpeechSynthesisUtterance(joke);
-  utterance.lang = languageMap[state.language] || 'en-US';
+  utterance.lang = {
+    English: 'en-US',
+    Spanish: 'es-ES',
+    French: 'fr-FR',
+    Arabic: 'ar-SA'
+  }[state.language] || 'en-US';
   utterance.rate = 0.9;
   utterance.pitch = 1.05;
   synth.speak(utterance);
 }
-
-const languageMap = {
-  English: 'en-US',
-  Spanish: 'es-ES',
-  French: 'fr-FR',
-  Arabic: 'ar-SA'
-};
 
 languageSelect.addEventListener('change', (event) => {
   setLanguage(event.target.value);
